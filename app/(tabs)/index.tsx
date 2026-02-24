@@ -1,98 +1,166 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
-export default function HomeScreen() {
+export default function Login() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ScrollView contentContainerStyle={styles.container}>
+      
+      {/* Logo Circle */}
+      <View style={styles.logoCircle}>
+        <Text style={{fontSize:30}}>🎓</Text>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Title */}
+      <Text style={styles.title}>RP SCHOOL VISIT</Text>
+      <Text style={styles.title}>MANAGEMENT</Text>
+
+      {/* School Image */}
+      <Image
+        source={{ uri: "https://images.unsplash.com/photo-1580582932707-520aed937b7b" }}
+        style={styles.image}
+      />
+
+      {/* Login Text */}
+      <Text style={styles.loginTitle}>Secure Login</Text>
+      <Text style={styles.subtitle}>
+        Access the school monitoring portal
+      </Text>
+
+      {/* Input Label */}
+      <Text style={styles.label}>Mobile Number or Email</Text>
+
+      {/* Input with Icon */}
+      <View style={styles.inputBox}>
+        <Ionicons name="person-circle-outline" size={22} color="#6b7280" />
+        <TextInput
+          placeholder="Enter registered contact details"
+          placeholderTextColor="#9ca3af"
+          style={styles.input}
+        />
+      </View>
+
+      {/* Button */}
+      <TouchableOpacity style={styles.button}>
+        <Text style={styles.buttonText}>Send OTP</Text>
+      </TouchableOpacity>
+
+      {/* Official Portal */}
+      <Text style={styles.portal}>OFFICIAL PORTAL</Text>
+
+      {/* Terms Text */}
+      <Text style={styles.terms}>
+        By logging in, you agree to our{" "}
+        <Text style={styles.link}>Terms of Service</Text> and{" "}
+        <Text style={styles.link}>Privacy Policy</Text>
+      </Text>
+
+      {/* Authorized */}
+      <Text style={styles.auth}>AUTHORIZED PERSONNEL ONLY</Text>
+
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container:{
+    flexGrow:1,
+    alignItems:"center",
+    backgroundColor:"#F2F4F7",
+    padding:20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+
+  logoCircle:{
+    marginTop:40,
+    width:90,
+    height:90,
+    borderRadius:50,
+    backgroundColor:"#E2E5EA",
+    alignItems:"center",
+    justifyContent:"center",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  title:{
+    fontSize:22,
+    fontWeight:"bold",
+    color:"#1E2A78",
+    textAlign:"center",
+  },
+
+  image:{
+    width:"100%",
+    height:200,
+    borderRadius:20,
+    marginVertical:20,
+  },
+
+  loginTitle:{
+    fontSize:26,
+    fontWeight:"bold",
+    marginTop:10,
+  },
+
+  subtitle:{
+    color:"gray",
+    marginBottom:20,
+  },
+
+  label:{
+    alignSelf:"flex-start",
+    fontWeight:"600",
+    marginBottom:5,
+  },
+
+  inputBox:{
+    width:"100%",
+    flexDirection:"row",
+    alignItems:"center",
+    backgroundColor:"#E5E7EB", // grey bg
+    borderRadius:12,
+    paddingHorizontal:12,
+    paddingVertical:14,
+  },
+
+  input:{
+    marginLeft:10,
+    flex:1,
+    fontSize:16,
+  },
+
+  button:{
+    width:"100%",
+    backgroundColor:"#232C7B",
+    padding:18,
+    borderRadius:12,
+    alignItems:"center",
+    marginTop:20,
+  },
+
+  buttonText:{
+    color:"#fff",
+    fontSize:18,
+    fontWeight:"bold",
+  },
+
+  portal:{
+    marginTop:30,
+    color:"#9ca3af",
+    letterSpacing:2,
+  },
+
+  terms:{
+    marginTop:10,
+    textAlign:"center",
+    color:"#6b7280",
+  },
+
+  link:{
+    color:"#1E2A78",
+    textDecorationLine:"underline",
+  },
+
+  auth:{
+    marginTop:10,
+    color:"#9ca3af",
+    fontWeight:"600",
   },
 });
