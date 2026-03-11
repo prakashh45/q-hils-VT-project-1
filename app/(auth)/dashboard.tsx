@@ -1,376 +1,298 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  TouchableOpacity,
+  View
 } from "react-native";
 
-export default function Dashboard() {
-  const quickAccess = [
-    { icon: "school", label: "Schools" },
-    { icon: "payments", label: "Expense" },
-    { icon: "event", label: "Leave" },
-    { icon: "description", label: "Reports" },
-    { icon: "trending-up", label: "Performance" },
-    { icon: "add-circle", label: "New Visit", highlight: true },
-  ];
 
+export default function Dashboard() {
+
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [schools, setSchools] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+
+  try {
+
+    const token = await AsyncStorage.getItem("access_token");
+
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    /* PROFILE API */
+
+    const profileResponse = await fetch(
+      "https://rp-backend-60066119139.development.catalystserverless.in/server/rp_mobile/rp/profile",
+      {
+        headers:{
+          Authorization:`Bearer ${token}`
+        }
+      }
+    );
+
+    const profile = await profileResponse.json();
+
+    console.log("PROFILE:",profile);
+
+    if(profile?.data?.name){
+      setName(profile.data.name);
+    }
+
+    /* SCHOOLS API */
+
+    /* SCHOOLS API */
+
+/* SCHOOLS API */
+
+const rpId = await AsyncStorage.getItem("rp_id");
+
+const schoolResponse = await fetch(
+  "https://rp-backend-60066119139.development.catalystserverless.in/server/rp_mobile_school/rp/schools",
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "rp_id": rpId ? rpId : ""
+    }
+  }
+);
+
+const schoolData = await schoolResponse.json();
+
+console.log("SCHOOLS:", schoolData);
+
+setSchools(schoolData?.data || []);
+  } catch (error) {
+
+    console.log("Dashboard error:", error);
+
+  } finally {
+
+    setLoading(false);
+
+  }
+
+};
   return (
+
     <View style={styles.container}>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.appTitle}>RP Visit Manager</Text>
-            <Text style={styles.date}>
+
+        {/* TOP BAR */}
+
+        <View style={styles.topBar}>
+
+          <View style={styles.topLeft}>
+
+            <Text style={styles.dateText}>
               Oct 24, 2023 • 09:15 AM
             </Text>
-          </View>
 
-          <View style={styles.headerRight}>
             <View style={styles.activeBadge}>
-              <Ionicons name="location" size={14} color="#28C76F" />
+
+              <Ionicons
+                name="location-outline"
+                size={14}
+                color="#16A34A"
+                style={{ marginRight: 4 }}
+              />
+
               <Text style={styles.activeText}>ACTIVE</Text>
+
             </View>
 
-            <View style={styles.bellWrapper}>
-              <Ionicons
-                name="notifications"
-                size={22}
-                color="#1F2A60"
-              />
-              <View style={styles.redDot} />
-            </View>
           </View>
+
+          <Ionicons name="notifications" size={22} color="#F97316" />
+
         </View>
 
         {/* PROFILE */}
+
         <View style={styles.profileRow}>
-          <Image
-            source={require("../../assets/images/avatar.png")}
-            style={styles.avatar}
-          />
-          <View>
-            <Text style={styles.greeting}>
-              Good Morning, Rajesh
-            </Text>
-            <Text style={styles.role}>
-              Regional Planning Officer
-            </Text>
+
+          <View style={styles.avatarBorder}>
+            <Image
+              source={require("../../assets/images/avatar.png")}
+              style={styles.avatar}
+            />
           </View>
+
+          <View>
+            <Text style={styles.hello}>Hello, {name || "User"}</Text>
+            <Text style={styles.role}>Resource Person</Text>
+          </View>
+
         </View>
 
-        {/* INSPIRATION CARD */}
+        {/* INSPIRATION */}
+
         <View style={styles.inspirationCard}>
+
           <Text style={styles.inspirationTitle}>
             DAILY INSPIRATION
           </Text>
+
           <Text style={styles.quote}>
-            "Education is the most powerful weapon which
-            you can use to change the world."
+            "Education is the most powerful weapon which you can use to change the world."
           </Text>
+
           <Text style={styles.author}>
             — Nelson Mandela
           </Text>
-        </View>
 
-        {/* ALERTS */}
-        <Text style={styles.sectionTitle}>
-          ALERTS & ACTIONS
-        </Text>
-
-        {/* CARD 1 */}
-        <View style={[styles.alertCard, { borderLeftColor: "#F39C12" }]}>
-          <View style={[styles.iconBox, { backgroundColor: "#FDEBD0" }]}>
-            <Ionicons name="time" size={20} color="#F39C12" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>Pending Visits</Text>
-            <Text style={styles.alertSubtitle}>
-              3 schools scheduled for today
-            </Text>
-          </View>
-          <Text style={[styles.count, { color: "#F39C12" }]}>
-            3
-          </Text>
-        </View>
-
-        {/* CARD 2 */}
-        <View style={[styles.alertCard, { borderLeftColor: "#E74C3C" }]}>
-          <View style={[styles.iconBox, { backgroundColor: "#FADBD8" }]}>
-            <Ionicons
-              name="alert-circle"
-              size={20}
-              color="#E74C3C"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>
-              Incomplete Visit
-            </Text>
-            <Text style={styles.alertSubtitle}>
-              Action required: St. Mary's High
-            </Text>
-          </View>
-          <Text style={[styles.count, { color: "#E74C3C" }]}>
-            1
-          </Text>
-        </View>
-
-        {/* CARD 3 */}
-        <View style={[styles.alertCard, { borderLeftColor: "#1F2A60" }]}>
-          <View style={[styles.iconBox, { backgroundColor: "#E8ECF8" }]}>
-            <Ionicons
-              name="shield-checkmark"
-              size={20}
-              color="#1F2A60"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>
-              Pending Verification
-            </Text>
-            <Text style={styles.alertSubtitle}>
-              Verify attendance records
-            </Text>
-          </View>
-          <Text style={[styles.count, { color: "#1F2A60" }]}>
-            2
-          </Text>
         </View>
 
         {/* QUICK ACCESS */}
+
+        <Text style={styles.sectionTitle}>QUICK ACCESS</Text>
+
         <View style={styles.grid}>
 
-  <View style={styles.gridItem}>
-    <MaterialIcons name="school" size={28} color="#1F2A60" />
-    <Text style={styles.gridText}>Schools</Text>
-  </View>
+          <TouchableOpacity
+            style={styles.quickCard}
+            onPress={() => router.push("/schools")}
+          >
+            <MaterialIcons name="school" size={28} color="#F97316" />
+            <Text style={styles.quickText}>Schools</Text>
+          </TouchableOpacity>
 
-  <View style={styles.gridItem}>
-    <MaterialIcons name="payments" size={28} color="#1F2A60" />
-    <Text style={styles.gridText}>Expense</Text>
-  </View>
+          {quickItem("event", "Schedule Visit")}
+          {quickItem("payments", "Expense")}
+          {quickItem("event-busy", "Leave")}
+          {quickItem("description", "Reports")}
+          {quickItem("trending-up", "Performance")}
 
-  <View style={styles.gridItem}>
-    <MaterialIcons name="event" size={28} color="#1F2A60" />
-    <Text style={styles.gridText}>Leave</Text>
-  </View>
+        </View>
 
-  <View style={styles.gridItem}>
-    <MaterialIcons name="description" size={28} color="#1F2A60" />
-    <Text style={styles.gridText}>Reports</Text>
-  </View>
+        {/* ALERTS */}
 
-  <View style={styles.gridItem}>
-    <MaterialIcons name="trending-up" size={28} color="#1F2A60" />
-    <Text style={styles.gridText}>Performance</Text>
-  </View>
+        <Text style={styles.sectionTitle}>ALERTS & ACTIONS</Text>
 
-  <View style={[styles.gridItem, styles.highlightCard]}>
-    <MaterialIcons name="add-circle" size={28} color="#1F2A60" />
-    <Text style={styles.gridText}>New Visit</Text>
-  </View>
+        {alertCard(
+          "school",
+          "#F97316",
+          "Total Schools Assigned",
+          "Across all zones",
+          schools.length.toString()
+        )}
 
-</View>
       </ScrollView>
 
-      {/* BOTTOM NAVIGATION */}
+      {/* BOTTOM NAV */}
+
       <View style={styles.bottomNav}>
-        <Ionicons name="home" size={22} color="#1F2A60" />
+
+        <Ionicons name="home" size={22} color="#F97316" />
         <Ionicons name="business" size={22} color="#9CA3AF" />
         <Ionicons name="wallet" size={22} color="#9CA3AF" />
         <Ionicons name="bar-chart" size={22} color="#9CA3AF" />
         <Ionicons name="person" size={22} color="#9CA3AF" />
+
       </View>
+
     </View>
+
   );
 }
+
+function alertCard(icon: any, color: string, title: string, sub: string, count: string) {
+  return (
+    <View style={[styles.alertCard, { borderLeftColor: color }]}>
+      <View style={[styles.iconBox, { backgroundColor: color + "20" }]}>
+        <MaterialIcons name={icon} size={24} color={color} />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <Text style={styles.alertTitle}>{title}</Text>
+        <Text style={styles.alertSub}>{sub}</Text>
+      </View>
+
+      <Text style={[styles.alertCount, { color }]}>{count}</Text>
+    </View>
+  )
+}
+
+function quickItem(icon: any, label: string) {
+  return (
+    <TouchableOpacity style={styles.quickCard}>
+      <MaterialIcons name={icon} size={28} color="#F97316" />
+      <Text style={styles.quickText}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F6FA",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
 
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
+  container: { flex: 1, backgroundColor: "#F3F4F6" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, marginTop: 40 },
 
-  appTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2A60",
-  },
+  topLeft: { flexDirection: "row", alignItems: "center" },
 
-  date: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
+  dateText: { fontSize: 12, color: "#6B7280", marginRight: 10 },
 
-  activeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E8F8F1",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
+  activeBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "#DCFCE7", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
 
-  activeText: {
-    color: "#28C76F",
-    fontSize: 12,
-    marginLeft: 5,
-    fontWeight: "600",
-  },
+  activeText: { fontSize: 10, color: "#16A34A", fontWeight: "600" },
 
-  bellWrapper: {
-    marginLeft: 15,
-  },
+  profileRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, marginTop: 20, marginBottom: 20 },
 
-  redDot: {
-    position: "absolute",
-    right: -2,
-    top: -2,
-    width: 8,
-    height: 8,
-    backgroundColor: "red",
-    borderRadius: 4,
-  },
+  avatarBorder: { borderWidth: 3, borderColor: "#F97316", borderRadius: 40, padding: 2, marginRight: 15 },
 
-  profileRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
+  avatar: { width: 60, height: 60, borderRadius: 30 },
 
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
-  },
+  hello: { fontSize: 22, fontWeight: "700" },
 
-  greeting: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
+  role: { color: "#6B7280" },
 
-  role: {
-    color: "#6B7280",
-  },
+  inspirationCard: { backgroundColor: "#F97316", marginHorizontal: 20, borderRadius: 20, padding: 20, marginBottom: 25 },
 
-  inspirationCard: {
-    backgroundColor: "#1F2A60",
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 25,
-  },
+  inspirationTitle: { color: "#FFEAD5", fontSize: 12, marginBottom: 10 },
 
-  inspirationTitle: {
-    color: "#A5B4FC",
-    fontSize: 12,
-    marginBottom: 10,
-  },
+  quote: { color: "#fff", fontStyle: "italic", lineHeight: 22 },
 
-  quote: {
-    color: "#fff",
-    fontSize: 16,
-    marginBottom: 10,
-  },
+  author: { color: "#fff", textAlign: "right", marginTop: 10 },
 
-  author: {
-    color: "#C7D2FE",
-    textAlign: "right",
-  },
+  sectionTitle: { marginLeft: 20, marginBottom: 10, fontWeight: "600", color: "#6B7280" },
 
-  sectionTitle: {
-    fontWeight: "700",
-    marginBottom: 15,
-    color: "#6B7280",
-  },
+  alertCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 20, padding: 15, borderRadius: 16, marginBottom: 15, borderLeftWidth: 4 },
 
-  alertCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 15,
-    borderLeftWidth: 5,
-  },
+  iconBox: { width: 45, height: 45, borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 15 },
 
-  iconBox: {
-    padding: 10,
-    borderRadius: 10,
-    marginRight: 15,
-  },
+  alertTitle: { fontWeight: "600" },
 
-  alertTitle: {
-    fontWeight: "700",
-  },
+  alertSub: { color: "#6B7280", fontSize: 12 },
 
-  alertSubtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
+  alertCount: { fontWeight: "700", fontSize: 18 },
 
-  count: {
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 25 },
 
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
+  quickCard: { width: "30%", backgroundColor: "#fff", borderRadius: 16, paddingVertical: 22, alignItems: "center", justifyContent: "center", marginBottom: 15 },
 
-  gridItem: {
-    width: "48%",
-    backgroundColor: "#fff",
-    padding: 25,
-    borderRadius: 15,
-    alignItems: "center",
-    marginBottom: 15,
-  },
+  quickText: { marginTop: 8, fontSize: 12, textAlign: "center" },
 
-  highlightCard: {
-    borderWidth: 1,
-    borderColor: "#1F2A60",
-  },
+  bottomNav: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#fff", flexDirection: "row", justifyContent: "space-around", paddingVertical: 15, borderTopWidth: 1, borderColor: "#E5E7EB" }
 
-  gridText: {
-    marginTop: 10,
-    fontWeight: "600",
-  },
-
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 70,
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderColor: "#E5E7EB",
-  },
 });

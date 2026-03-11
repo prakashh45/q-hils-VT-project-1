@@ -1,71 +1,237 @@
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
-  Alert,
+  View,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
 
 export default function OtpScreen() {
-  const router = useRouter();
-  const { contact, otp } = useLocalSearchParams();
-  const [enteredOtp, setEnteredOtp] = useState("");
 
-  const verifyOtp = () => {
-    if (!enteredOtp) {
-      Alert.alert("Error", "Please enter OTP");
+  const router = useRouter();
+  const { phone } = useLocalSearchParams();
+
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const verifyOtp = async () => {
+
+    if (!enteredOtp || enteredOtp.length < 6) {
+      Alert.alert("Error", "Please enter valid OTP");
       return;
     }
 
-    if (enteredOtp === otp) {
-      Alert.alert("Success", "Login Successful!");
-      router.replace("/dashboard"); // 
-    } else {
-      Alert.alert("Error", "Invalid OTP");
+    try {
+
+      setLoading(true);
+
+      const response = await fetch(
+        "https://rp-backend-60066119139.development.catalystserverless.in/server/auth_verify_otp/rp/auth/verify-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            identifier: phone,
+            otp: enteredOtp
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("OTP RESPONSE:", data);
+
+      if (!data.success) {
+        Alert.alert("Error", "OTP verification failed");
+        return;
+      }
+
+      const token = data.access_token;
+
+      await AsyncStorage.setItem("access_token", token);
+
+      /* GET PROFILE */
+
+      const profileResponse = await fetch(
+        "https://rp-backend-60066119139.development.catalystserverless.in/server/rp_mobile/rp/profile",
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      const profile = await profileResponse.json();
+
+      console.log("PROFILE:", profile);
+
+      console.log("PROFILE:", profile);
+
+      if (profile?.data?.ROWID) {
+
+        await AsyncStorage.setItem(
+          "rp_id",
+          profile.data.ROWID.toString()
+        );
+
+        router.replace("/dashboard");
+
+      } else {
+
+        Alert.alert("Login Error", "Profile fetch failed");
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+
+    } finally {
+
+      setLoading(false);
+
     }
+
   };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Verify OTP</Text>
-      <Text style={styles.subtitle}>OTP sent to {contact}</Text>
 
-      <TextInput
-        style={styles.input}
-        keyboardType="number-pad"
-        maxLength={6}
-        value={enteredOtp}
-        onChangeText={setEnteredOtp}
-        placeholder="Enter 6 digit OTP"
-      />
+    <ScrollView contentContainerStyle={styles.container}>
+
+      <View style={styles.logoCircle}>
+        <Ionicons name="key-outline" size={40} color="#F97316" />
+      </View>
+
+      <Text style={styles.title}>Verify OTP</Text>
+
+      <Text style={styles.subTitle}>
+        Enter the 6-digit code sent to{" "}
+        <Text style={styles.highlight}>{phone}</Text>
+      </Text>
+
+      <View style={styles.inputBox}>
+        <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
+
+        <TextInput
+          style={styles.input}
+          keyboardType="number-pad"
+          maxLength={6}
+          placeholder="Enter 6 digit OTP"
+          placeholderTextColor="#9CA3AF"
+          value={enteredOtp}
+          onChangeText={setEnteredOtp}
+        />
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={verifyOtp}>
-        <Text style={styles.buttonText}>Verify</Text>
+
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Verify OTP</Text>
+        )}
+
       </TouchableOpacity>
-    </View>
+
+      <Text style={styles.resendText}>
+        Didn't receive code?{" "}
+        <Text style={styles.resendLink}>Resend OTP</Text>
+      </Text>
+
+    </ScrollView>
+
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 24, fontWeight: "700", textAlign: "center" },
-  subtitle: { textAlign: "center", marginBottom: 20 },
-  input: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    textAlign: "center",
-    marginBottom: 20,
-    fontSize: 18,
-  },
-  button: {
-    backgroundColor: "#1F2A60",
-    padding: 15,
-    borderRadius: 10,
+
+  container: {
+    flexGrow: 1,
+    backgroundColor: "#F3F4F6",
     alignItems: "center",
+    padding: 20,
+    justifyContent: "center"
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
+
+  logoCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 60,
+    backgroundColor: "#FDEDDC",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 30
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 10
+  },
+
+  subTitle: {
+    textAlign: "center",
+    color: "#6B7280",
+    marginBottom: 25
+  },
+
+  highlight: {
+    color: "#F97316",
+    fontWeight: "600"
+  },
+
+  inputBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    width: "100%",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB"
+  },
+
+  input: {
+    marginLeft: 10,
+    flex: 1,
+    fontSize: 16
+  },
+
+  button: {
+    backgroundColor: "#F97316",
+    width: "100%",
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    marginBottom: 20
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16
+  },
+
+  resendText: {
+    color: "#6B7280"
+  },
+
+  resendLink: {
+    color: "#F97316",
+    fontWeight: "600"
+  }
+
 });

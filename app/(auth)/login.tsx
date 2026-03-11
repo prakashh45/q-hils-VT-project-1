@@ -2,7 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Image, ScrollView,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -10,77 +13,130 @@ import {
   View,
 } from "react-native";
 
-export default function LoginScreen() {
+export default function Login() {
   const router = useRouter();
   const [contact, setContact] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const sendOtp = async () => {
+
     if (!contact) {
-      alert("Enter mobile or email");
+      Alert.alert("Error", "Please enter phone number with country code");
       return;
     }
 
-    const generatedOtp = "123456";
+    try {
 
-    router.push({
-      pathname: "/(auth)/otp",
-      params: { contact, otp: generatedOtp },
-    });
+      setLoading(true);
+
+      const response = await fetch(
+        "https://rp-backend-60066119139.development.catalystserverless.in/server/auth_verify_otp/rp/auth/request-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            identifier: contact
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("SEND OTP:", data);
+
+      if (data.success) {
+
+        Alert.alert("Success", "OTP Sent Successfully");
+
+        router.push({
+          pathname: "/otp",
+          params: { phone: contact },
+        });
+
+      } else {
+
+        Alert.alert("Error", data.message || "OTP sending failed");
+
+      }
+
+    } catch (error) {
+
+      console.log(error);
+      Alert.alert("Server Error");
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
   };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Top Logo */}
+      {/* LOGO */}
       <View style={styles.logoCircle}>
-        <Ionicons name="school" size={36} color="#1F2A60" />
+        <Ionicons name="school" size={30} color="#F97316" />
       </View>
 
-      <Text style={styles.title}>RP SCHOOL VISIT</Text>
-      <Text style={styles.title}>MANAGEMENT</Text>
+      <Text style={styles.appTitle}>
+        RAMAKRISHNA MISSION GURUGRAM VIVEKANANDA INSTITUTE OF VALUES
+      </Text>
 
-      {/* Image Card */}
+      {/* IMAGE */}
       <Image
         source={require("../../assets/images/school.png")}
         style={styles.image}
       />
 
-      {/* Login Section */}
-      <Text style={styles.secureTitle}>Secure Login</Text>
-      <Text style={styles.subtitle}>
+      {/* LOGIN TITLE */}
+      <Text style={styles.loginTitle}>Secure Login</Text>
+      <Text style={styles.subTitle}>
         Access the school monitoring portal
       </Text>
 
+      {/* INPUT LABEL */}
       <Text style={styles.label}>Mobile Number or Email</Text>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="person-outline" size={20} color="#8A94A6" />
+      {/* INPUT FIELD */}
+      <View style={styles.inputBox}>
+        <Ionicons name="call-outline" size={20} color="#9CA3AF" />
         <TextInput
           placeholder="Enter registered contact details"
-          placeholderTextColor="#8A94A6"
+          placeholderTextColor="#9CA3AF"
           style={styles.input}
+          keyboardType="number-pad"
           value={contact}
           onChangeText={setContact}
         />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Send OTP</Text>
+      {/* BUTTON */}
+      <TouchableOpacity style={styles.button} onPress={sendOtp}>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Send OTP</Text>
+        )}
       </TouchableOpacity>
 
-      <View style={styles.dividerContainer}>
+      {/* FOOTER */}
+      <View style={styles.dividerRow}>
         <View style={styles.line} />
-        <Text style={styles.dividerText}>OFFICIAL PORTAL</Text>
+        <Text style={styles.portalText}>OFFICIAL PORTAL</Text>
         <View style={styles.line} />
       </View>
 
       <Text style={styles.footerText}>
         By logging in, you agree to our{" "}
-        <Text style={styles.link}>Terms of Service</Text> and{" "}
+        <Text style={styles.link}>Terms of Service</Text>{" "}
+        and{" "}{"\n"}
         <Text style={styles.link}>Privacy Policy</Text>
       </Text>
 
       <View style={styles.authorizedRow}>
-        <Ionicons name="shield-checkmark" size={16} color="#8A94A6" />
+        <Ionicons name="shield-checkmark" size={16} color="#9CA3AF" />
         <Text style={styles.authorizedText}>
           AUTHORIZED PERSONNEL ONLY
         </Text>
@@ -91,43 +147,45 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#F4F6FA",
+    flexGrow: 1,
+    backgroundColor: "#F3F4F6",
     alignItems: "center",
+    padding: 20,
   },
 
   logoCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#E5E8F0",
+    width: 80,
+    height: 80,
+    borderRadius: 60,
+    backgroundColor: "#FDEDDC",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 5,
   },
 
-  title: {
+  appTitle: {
+    textAlign: "center",
     fontSize: 22,
     fontWeight: "700",
-    color: "#1F2A60",
+    color: "#F97316",
+    marginVertical: 20,
   },
 
   image: {
     width: "100%",
-    height: 190,
+    height: 180,
     borderRadius: 20,
-    marginVertical: 25,
+    marginBottom: 15,
   },
 
-  secureTitle: {
-    fontSize: 24,
+  loginTitle: {
+    fontSize: 20,
     fontWeight: "700",
-    marginTop: 10,
-    color: "#1E2A3A",
+    color: "#111827",
   },
 
-  subtitle: {
-    color: "#6C7A93",
+  subTitle: {
+    color: "#6B7280",
     marginBottom: 20,
   },
 
@@ -135,31 +193,30 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     fontWeight: "600",
     marginBottom: 8,
-    color: "#1E2A3A",
   },
 
-  inputContainer: {
+  inputBox: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    paddingHorizontal: 15,
     borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
     width: "100%",
-    height: 55,
-    borderWidth: 1,
-    borderColor: "#D5DCE6",
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
 
   input: {
-    flex: 1,
     marginLeft: 10,
+    flex: 1,
   },
 
   button: {
-    backgroundColor: "#1F2A60",
+    backgroundColor: "#F97316",
     width: "100%",
-    padding: 16,
+    paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
     marginBottom: 25,
@@ -167,50 +224,50 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: "#fff",
+    fontWeight: "700",
     fontSize: 16,
-    fontWeight: "600",
   },
 
-  dividerContainer: {
+  dividerRow: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginVertical: 15,
+    marginBottom: 15,
   },
 
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: "#D5DCE6",
+    backgroundColor: "#E5E7EB",
   },
 
-  dividerText: {
+  portalText: {
     marginHorizontal: 10,
-    color: "#8A94A6",
-    fontWeight: "600",
-    letterSpacing: 1,
+    color: "#9CA3AF",
+    fontSize: 12,
+    letterSpacing: 2,
   },
 
   footerText: {
     textAlign: "center",
-    color: "#6C7A93",
-    marginVertical: 10,
+    color: "#6B7280",
+    fontSize: 12,
+    marginBottom: 15,
   },
 
   link: {
-    color: "#1F2A60",
+    color: "#F97316",
     fontWeight: "600",
   },
 
   authorizedRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
-    gap: 6,
   },
 
   authorizedText: {
-    color: "#8A94A6",
+    marginLeft: 6,
     fontSize: 12,
+    color: "#9CA3AF",
   },
 });
