@@ -54,10 +54,6 @@ export default function Dashboard() {
       setName(profile.data.name);
     }
 
-    /* SCHOOLS API */
-
-    /* SCHOOLS API */
-
 /* SCHOOLS API */
 
 const rpId = await AsyncStorage.getItem("rp_id");
@@ -83,9 +79,7 @@ setSchools(schoolData?.data || []);
     console.log("Dashboard error:", error);
 
   } finally {
-
     setLoading(false);
-
   }
 
 };

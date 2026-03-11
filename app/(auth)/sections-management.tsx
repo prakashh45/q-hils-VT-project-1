@@ -15,7 +15,7 @@ export default function SectionsManagement() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null)
-const [selectedClass, setSelectedClass] = useState("6");
+  const [selectedClass, setSelectedClass] = useState("6");
   const [sections, setSections] = useState([
     {
       class: "6",
@@ -28,7 +28,7 @@ const [selectedClass, setSelectedClass] = useState("6");
     }
   ]);
 
-const deleteRow = (index: number) => {
+  const deleteRow = (index: number) => {
     const data = [...sections];
     data.splice(index, 1);
     setSections(data);
@@ -44,7 +44,7 @@ const deleteRow = (index: number) => {
     setModalVisible(true);
   };
 
- const saveSection = (data: any) => {
+  const saveSection = (data: any) => {
 
     if (editIndex !== null) {
 
@@ -71,9 +71,15 @@ const deleteRow = (index: number) => {
 
         <View style={styles.topRow}>
 
-          <Text style={styles.school}>
-            Greenwood High International School
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.school}>
+              Greenwood High International School
+            </Text>
+
+            <Text style={styles.classText}>
+              Class : {selectedClass}
+            </Text>
+          </View>
 
           <TouchableOpacity
             style={styles.addBtn}
@@ -84,7 +90,6 @@ const deleteRow = (index: number) => {
           </TouchableOpacity>
 
         </View>
-
         <Text style={styles.subtitle}>
           Manage student strength and assigned teachers for all sections.
         </Text>
@@ -448,7 +453,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 10
   },
-
+  classText: {
+    marginTop: 4,
+    fontWeight: "700",
+    color: "#374151"
+  },
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#F9FAFB",

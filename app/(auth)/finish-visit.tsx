@@ -80,7 +80,6 @@ export default function FinishVisit() {
 
                 </View>
 
-
                 {/* SUMMARY */}
 
                 <View style={styles.summaryCard}>

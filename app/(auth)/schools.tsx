@@ -34,10 +34,10 @@ interface School {
 async function fetchSchools(rpId: string) {
 
   const res = await fetch(
-    "/server/rp_mobile_school/rp/schools",
+    "/server/rp_mobile_school",
     {
-      headers:{
-        "Content-Type":"application/json",
+      headers: {
+        "Content-Type": "application/json",
         rp_id: rpId
       }
     }
@@ -45,7 +45,7 @@ async function fetchSchools(rpId: string) {
 
   const json = await res.json();
 
-  console.log("SCHOOLS:",json);
+  console.log("SCHOOLS:", json);
 
   return json?.data || [];
 

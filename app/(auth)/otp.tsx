@@ -23,14 +23,16 @@ export default function OtpScreen() {
 
   const verifyOtp = async () => {
 
-    if (!enteredOtp || enteredOtp.length < 6) {
-      Alert.alert("Error", "Please enter valid OTP");
+    if (!enteredOtp || enteredOtp.length !== 6) {
+      Alert.alert("Error", "Please enter valid 6 digit OTP");
       return;
     }
 
     try {
 
       setLoading(true);
+
+      /* VERIFY OTP */
 
       const response = await fetch(
         "https://rp-backend-60066119139.development.catalystserverless.in/server/auth_verify_otp/rp/auth/verify-otp",
@@ -57,6 +59,8 @@ export default function OtpScreen() {
 
       const token = data.access_token;
 
+      console.log("TOKEN:", token);
+
       await AsyncStorage.setItem("access_token", token);
 
       /* GET PROFILE */
@@ -66,15 +70,13 @@ export default function OtpScreen() {
         {
           method: "GET",
           headers: {
-            Authorization: token,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           }
         }
       );
 
       const profile = await profileResponse.json();
-
-      console.log("PROFILE:", profile);
 
       console.log("PROFILE:", profile);
 
@@ -95,7 +97,8 @@ export default function OtpScreen() {
 
     } catch (error) {
 
-      console.log(error);
+      console.log("OTP ERROR:", error);
+      Alert.alert("Error", "Something went wrong");
 
     } finally {
 
@@ -104,6 +107,7 @@ export default function OtpScreen() {
     }
 
   };
+
   return (
 
     <ScrollView contentContainerStyle={styles.container}>
@@ -151,6 +155,7 @@ export default function OtpScreen() {
     </ScrollView>
 
   );
+
 }
 
 const styles = StyleSheet.create({
