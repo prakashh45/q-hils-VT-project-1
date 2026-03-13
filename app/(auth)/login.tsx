@@ -29,8 +29,7 @@ export default function Login() {
 
       setLoading(true);
 
-      const response = await fetch(
-        "https://rp-backend-60066119139.development.catalystserverless.in/server/auth_verify_otp/rp/auth/request-otp",
+      const response = await fetch("https://rp-backend-60066119139.development.catalystserverless.in/server/auth_verify_otp/rp/auth/request-otp",
         {
           method: "POST",
           headers: {

@@ -1,47 +1,105 @@
 import React, { createContext, useContext, useState } from "react";
 
-const VisitContext = createContext<any>(null);
+/* ---------- TYPES ---------- */
 
-export const VisitProvider = ({ children }: any) => {
+type SchoolType = {
+  id: string;
+  name: string;
+  district?: string;
+};
 
-const [visits,setVisits] = useState([
-{
-date:"Oct 24 2023",
-time:"10:00 AM",
-school:"Greenwood High",
-district:"North District"
-}
-]);
+type VisitType = {
+  date: string;
+  time: string;
+  school: string;
+  district: string;
+};
 
-/* NEW: current school for active visit */
+type VisitContextType = {
+  visits: VisitType[];
+  addVisit: (visit: VisitType) => void;
 
-const [currentSchool,setCurrentSchool] = useState<any>(null);
+  currentSchool: SchoolType | null;
+  setCurrentSchool: (school: SchoolType | null) => void;
 
-const addVisit = (visit:any)=>{
-setVisits([...visits,visit])
-}
+  visitId: string | null;
+  setVisitId: (id: string | null) => void;
+};
 
-return(
+/* ---------- CONTEXT ---------- */
 
-<VisitContext.Provider
-value={{
-visits,
-addVisit,
+const VisitContext = createContext<VisitContextType | undefined>(undefined);
 
-/* NEW VALUES */
+/* ---------- DEFAULT SCHOOL ---------- */
 
-currentSchool,
-setCurrentSchool
-}}
->
+const DEFAULT_SCHOOL: SchoolType = {
+  id: "31311000000027052",
+  name: "Demo School",
+  district: "Default District"
+};
 
-{children}
+/* ---------- PROVIDER ---------- */
 
-</VisitContext.Provider>
+export const VisitProvider = ({ children }: { children: React.ReactNode }) => {
 
-)
+  const [visits, setVisits] = useState<VisitType[]>([
+    {
+      date: "Oct 24 2023",
+      time: "10:00 AM",
+      school: "Greenwood High",
+      district: "North District"
+    }
+  ]);
 
-}
+  /* CURRENT SCHOOL (DEFAULT SET) */
 
-export const useVisit = ()=>useContext(VisitContext)
+  const [currentSchool, setCurrentSchool] = useState<SchoolType | null>(DEFAULT_SCHOOL);
+
+  /* ACTIVE VISIT ID */
+
+  const [visitId, setVisitId] = useState<string | null>(null);
+
+  /* ADD VISIT */
+
+  const addVisit = (visit: VisitType) => {
+
+    setVisits((prev) => [...prev, visit]);
+
+  };
+
+  return (
+
+    <VisitContext.Provider
+      value={{
+        visits,
+        addVisit,
+        currentSchool,
+        setCurrentSchool,
+        visitId,
+        setVisitId
+      }}
+    >
+
+      {children}
+
+    </VisitContext.Provider>
+
+  );
+
+};
+
+/* ---------- HOOK ---------- */
+
+export const useVisit = () => {
+
+  const context = useContext(VisitContext);
+
+  if (!context) {
+    throw new Error("useVisit must be used inside VisitProvider");
+  }
+
+  return context;
+
+};
+
 export default VisitProvider;

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -11,94 +12,223 @@ import {
   View
 } from "react-native";
 
-import { startVisit } from "../../services/visitService";
 import AppHeader from "../components/AppHeader";
 import SchoolBanner from "../components/SchoolBanner";
 import { useVisit } from "../context/VisitContext";
 
+const BASE_URL =
+"https://rp-backend-60066119139.development.catalystserverless.in";
+
 export default function VisitCheckin(){
 
 const router = useRouter();
-const { currentSchool } = useVisit();
+const { currentSchool,setVisitId } = useVisit();
 
-const [location,setLocation] = useState<{
-latitude:number
-longitude:number
-}|null>(null)
+const [rpId,setRpId] = useState("");
+const [location,setLocation] = useState<any>(null);
+const [accuracy,setAccuracy] = useState<number|null>(null);
+const [timestamp,setTimestamp] = useState("");
+const [address,setAddress] = useState("");
 
-const [accuracy,setAccuracy] = useState<number|null>(null)
-const [timestamp,setTimestamp] = useState("")
+useEffect(()=>{
+loadUser();
+getLocation();
+},[]);
+
+/* LOAD USER */
+
+const loadUser = async()=>{
+
+const id = await AsyncStorage.getItem("rp_id");
+
+if(id){
+setRpId(id);
+}
+
+};
+
+/* GET GPS LOCATION */
 
 const getLocation = async()=>{
 
 try{
 
-const {status} = await Location.requestForegroundPermissionsAsync()
+const {status} =
+await Location.requestForegroundPermissionsAsync();
 
-if(status!=="granted"){
-alert("Location permission denied")
-return
+if(status !== "granted"){
+alert("Location permission denied");
+return;
 }
 
 const loc = await Location.getCurrentPositionAsync({
 accuracy:Location.Accuracy.High
-})
+});
+
+const coords = loc.coords;
+
+const lat = coords.latitude;
+const lon = coords.longitude;
 
 setLocation({
-latitude:loc.coords.latitude,
-longitude:loc.coords.longitude
-})
+latitude:lat,
+longitude:lon
+});
 
-setAccuracy(loc.coords.accuracy ?? null)
+setAccuracy(coords.accuracy ?? null);
 
-const now = new Date()
-setTimestamp(now.toLocaleString())
+setTimestamp(new Date().toLocaleString());
+
+/* FULL GPS DETAILS LOG */
+
+console.log("GPS LOCATION:",coords);
+
+/* GET ADDRESS */
+
+const geo = await Location.reverseGeocodeAsync({
+latitude:lat,
+longitude:lon
+});
+
+if(geo.length>0){
+
+const g = geo[0];
+
+/* ONLY CITY + STATE */
+
+const locationName = [
+g.city,
+g.region
+].filter(Boolean).join(", ");
+
+setAddress(locationName);
+
+console.log("CURRENT LOCATION NAME:",locationName);
+
+}
 
 }catch(e){
-alert("Unable to fetch GPS")
-}
+
+console.log("GPS ERROR:",e);
 
 }
 
-useEffect(()=>{
-getLocation()
-},[])
+};
 
+/* CHECK ACTIVE VISIT */
 
-/* CHECK-IN API */
-
-const handleCheckin = async()=>{
+const checkActiveVisit = async()=>{
 
 try{
 
-if(!location){
-alert("Location not available")
-return
-}
+const res = await fetch(
+`${BASE_URL}/server/rp_visits/rp/visits/active?rp_id=${rpId}`
+);
 
-await startVisit(
-currentSchool?.id,
-location.latitude,
-location.longitude
-)
+const data = await res.json();
 
-router.push("/visit-form")
+console.log("ACTIVE VISIT:",data);
+
+return data;
 
 }catch(e){
 
-console.log("Checkin error",e)
-alert("Unable to start visit")
+console.log("ACTIVE VISIT ERROR:",e);
+return null;
 
 }
 
+};
+
+/* START VISIT */
+
+const startVisitAPI = async(lat:number,lon:number,addr:string)=>{
+
+try{
+
+const res = await fetch(
+`${BASE_URL}/server/rp_visits/rp/visits`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+
+rp_id:rpId,
+school_id:currentSchool?.id,
+check_in_lat:lat,
+check_in_long:lon,
+check_in_address:addr
+
+})
+}
+);
+
+const data = await res.json();
+
+console.log("VISIT START:",data);
+
+return data;
+
+}catch(e){
+
+console.log("VISIT START ERROR:",e);
+return null;
+
 }
 
+};
+
+/* CHECKIN */
+
+const handleCheckin = async()=>{
+
+if(!rpId) return alert("RP ID missing");
+if(!currentSchool) return alert("School not selected");
+
+const loc = await Location.getCurrentPositionAsync({
+accuracy:Location.Accuracy.High
+});
+
+const lat = loc.coords.latitude;
+const lon = loc.coords.longitude;
+
+let addr = address;
+
+console.log("CURRENT GPS:",lat,lon);
+
+const active = await checkActiveVisit();
+
+if(active?.success && active?.active_visit){
+
+const visitId = active.active_visit.ROWID;
+
+setVisitId(visitId);
+
+router.push("/visit-form");
+
+return;
+
+}
+
+const visit = await startVisitAPI(lat,lon,addr);
+
+if(visit?.success){
+
+const id = visit?.data?.ROWID || visit?.ROWID;
+
+setVisitId(id);
+
+router.push("/visit-form");
+
+}
+
+};
 
 return(
 
 <View style={styles.container}>
-
-{/* HEADER */}
 
 <AppHeader title="Visit Check-in"/>
 <SchoolBanner/>
@@ -107,25 +237,7 @@ return(
 STEP 1 OF 6
 </Text>
 
-<ScrollView
-showsVerticalScrollIndicator={false}
-contentContainerStyle={{paddingBottom:60}}
->
-
-{/* STEP BAR */}
-
-<View style={styles.stepRow}>
-
-<View style={styles.stepActive}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
-
-</View>
-
-{/* SCHOOL CARD */}
+<ScrollView contentContainerStyle={{paddingBottom:60}}>
 
 <View style={styles.schoolCard}>
 
@@ -139,77 +251,81 @@ ID: {currentSchool?.id}
 
 </View>
 
-{/* MAP CARD */}
-
 <View style={styles.mapCard}>
+
+{location && (
 
 <Image
 style={styles.map}
 source={{
-uri: location
-? `https://maps.googleapis.com/maps/api/staticmap?center=${location.latitude},${location.longitude}&zoom=15&size=600x300&markers=color:red%7C${location.latitude},${location.longitude}`
-: "https://maps.googleapis.com/maps/api/staticmap?center=0,0&zoom=1&size=600x300"
+uri:
+`https://maps.googleapis.com/maps/api/staticmap?center=${location.latitude},${location.longitude}&zoom=15&size=600x300&markers=color:red%7C${location.latitude},${location.longitude}`
 }}
 />
+
+)}
 
 <View style={styles.coordinateCard}>
 
 <View>
+
 <Text style={styles.coordTitle}>
-Coordinates
+CURRENT COORDINATES
 </Text>
 
 <Text style={styles.coordValue}>
 {location
 ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
-: "Fetching GPS..."
-}
+:"Fetching..."}
 </Text>
+
 </View>
 
 <View>
+
 <Text style={styles.coordTitle}>
-Accuracy
+ACCURACY
 </Text>
 
 <Text style={styles.accuracy}>
 {accuracy ? `± ${accuracy.toFixed(1)} m` : "--"}
 </Text>
+
+</View>
+
 </View>
 
 </View>
 
-<View style={styles.gpsBanner}>
+{/* CURRENT LOCATION NAME */}
 
-<Ionicons name="checkmark-circle" size={18} color="#fff"/>
+<View style={styles.addressCard}>
 
-<Text style={styles.gpsText}>
-GPS LOCATION CAPTURED
+<Ionicons name="location-outline" size={20} color="#F97316"/>
+
+<Text style={styles.addressText}>
+{address || "Fetching current location..."}
 </Text>
 
 </View>
-
-</View>
-
-{/* TIME CARD */}
 
 <View style={styles.timeCard}>
 
 <Ionicons name="time-outline" size={24} color="#F97316"/>
 
-<View style={{marginLeft:12}}>
+<View style={{marginLeft:10}}>
+
 <Text style={styles.timeTitle}>
-Check-in Timestamp
+CHECK-IN TIMESTAMP
 </Text>
 
 <Text style={styles.timeText}>
 {timestamp || "Fetching..."}
 </Text>
-</View>
 
 </View>
 
-{/* PROCEED BUTTON */}
+</View>
 
 <TouchableOpacity
 style={styles.proceedBtn}
@@ -224,17 +340,6 @@ Proceed to Visit Form
 
 </TouchableOpacity>
 
-{/* RECALIBRATE */}
-
-<TouchableOpacity
-onPress={getLocation}
-style={{marginTop:12}}
->
-<Text style={styles.recalibrate}>
-Recalibrate GPS
-</Text>
-</TouchableOpacity>
-
 </ScrollView>
 
 </View>
@@ -245,43 +350,17 @@ Recalibrate GPS
 
 const styles = StyleSheet.create({
 
-container:{
-flex:1,
-backgroundColor:"#F3F4F6"
-},
+container:{flex:1,backgroundColor:"#F3F4F6"},
 
 stepLabel:{
 textAlign:"center",
-marginTop:15,
-fontSize:12,
+marginTop:10,
 color:"#6B7280"
-},
-
-stepRow:{
-flexDirection:"row",
-justifyContent:"center",
-marginVertical:10
-},
-
-stepActive:{
-height:6,
-width:45,
-backgroundColor:"#F97316",
-borderRadius:6,
-marginRight:6
-},
-
-step:{
-height:6,
-width:22,
-backgroundColor:"#FCD9C6",
-borderRadius:6,
-marginRight:6
 },
 
 schoolCard:{
 alignItems:"center",
-marginVertical:10
+marginVertical:15
 },
 
 schoolName:{
@@ -296,10 +375,9 @@ marginTop:4
 
 mapCard:{
 backgroundColor:"#fff",
+marginHorizontal:20,
 borderRadius:16,
-overflow:"hidden",
-marginTop:15,
-marginHorizontal:20
+overflow:"hidden"
 },
 
 map:{
@@ -313,11 +391,10 @@ top:10,
 left:10,
 right:10,
 backgroundColor:"#fff",
-padding:12,
+padding:10,
 borderRadius:10,
 flexDirection:"row",
-justifyContent:"space-between",
-elevation:3
+justifyContent:"space-between"
 },
 
 coordTitle:{
@@ -334,25 +411,25 @@ fontWeight:"700",
 color:"#16A34A"
 },
 
-gpsBanner:{
-backgroundColor:"#22C55E",
+addressCard:{
 flexDirection:"row",
-justifyContent:"center",
 alignItems:"center",
-padding:12
+backgroundColor:"#fff",
+margin:20,
+padding:16,
+borderRadius:14
 },
 
-gpsText:{
-color:"#fff",
-fontWeight:"700",
-marginLeft:6
+addressText:{
+marginLeft:10,
+fontWeight:"600"
 },
 
 timeCard:{
 backgroundColor:"#fff",
-padding:18,
-borderRadius:16,
-margin:20,
+padding:16,
+borderRadius:14,
+marginHorizontal:20,
 flexDirection:"row",
 alignItems:"center"
 },
@@ -363,14 +440,13 @@ color:"#6B7280"
 },
 
 timeText:{
-fontSize:16,
 fontWeight:"700"
 },
 
 proceedBtn:{
 backgroundColor:"#F97316",
 marginHorizontal:20,
-marginTop:10,
+marginTop:20,
 padding:16,
 borderRadius:16,
 flexDirection:"row",
@@ -382,11 +458,6 @@ proceedText:{
 color:"#fff",
 fontWeight:"700",
 marginRight:6
-},
-
-recalibrate:{
-textAlign:"center",
-color:"#6B7280"
 }
 
-})
+});

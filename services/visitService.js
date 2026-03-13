@@ -1,34 +1,34 @@
-import API from "./api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const startVisit = async (schoolId, lat, long) => {
-  const response = await API.post(
-    "/server/rp_visits/rp/visits",
+const BASE_URL =
+"https://rp-backend-60066119139.development.catalystserverless.in";
+
+export const startVisit = async (schoolId, lat, lon) => {
+
+  const token = await AsyncStorage.getItem("access_token");
+
+  const response = await fetch(
+    `${BASE_URL}/server/rp_mobile_visit/rp/start_visit`,
     {
-      school_id: schoolId,
-      check_in_lat: lat,
-      check_in_long: long,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        school_id: schoolId,
+        visit_lat: lat,
+        visit_lon: lon,
+        visit_timestamp: new Date().toISOString()
+      })
     }
   );
 
-  return response.data;
-};
+  const data = await response.json();
 
-export const getActiveVisit = async () => {
-  const response = await API.get(
-    "/server/rp_visits/rp/visits/active"
-  );
+  if(!response.ok){
+    throw new Error("Visit start failed");
+  }
 
-  return response.data;
-};
-
-export const checkoutVisit = async (visitId, lat, long) => {
-  const response = await API.patch(
-    `/server/rp_visits/rp/visits/${visitId}/checkout`,
-    {
-      check_out_lat: lat,
-      check_out_long: long,
-    }
-  );
-
-  return response.data;
+  return data;
 };

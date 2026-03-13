@@ -1,350 +1,318 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+
 import AppHeader from "../components/AppHeader";
 import SchoolBanner from "../components/SchoolBanner";
+import { useVisit } from "../context/VisitContext";
 
-export default function VisitForm(){
+const BASE_URL =
+  "https://rp-backend-60066119139.development.catalystserverless.in";
 
-const router = useRouter();
+export default function VisitForm() {
 
-const [purpose,setPurpose] = useState("Select Purpose");
-const [showDropdown,setShowDropdown] = useState(false);
+  const router = useRouter();
+  const { visitId } = useVisit();
 
-const purposes = [
-"Class Observation",
-"Adopted Class",
-"Enabling Session",
-"No Class Observed",
-"Impact Survey"
-];
+  const [purpose, setPurpose] = useState("Select Purpose");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [remarks, setRemarks] = useState("");
+  const [loading, setLoading] = useState(false);
 
-return(
+  const purposes = [
+    "Class Observation",
+    "Adopted Class",
+    "Enabling Session",
+    "No Class Observed",
+    "Impact Survey"
+  ];
 
-<View style={styles.container}>
+  /* SAVE PURPOSE API */
 
-{/* HEADER */}
+  const savePurpose = async () => {
 
-<AppHeader
-title="Visit Form"
-/>
+    try {
 
-<SchoolBanner/>
+      if (!visitId) {
+        alert("Visit ID missing");
+        return;
+      }
 
-<ScrollView
-showsVerticalScrollIndicator={false}
-contentContainerStyle={{paddingBottom:60}}
->
+      if (purpose === "Select Purpose") {
+        alert("Please select visit purpose");
+        return;
+      }
 
-{/* STEP INFO */}
+      setLoading(true);
 
-<Text style={styles.stepText}>
-STEP 2 OF 6
-</Text>
+      const res = await fetch(
+        `${BASE_URL}/server/rp_visits/rp/visits/${visitId}/purpose`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            visit_purpose: [purpose],
+            remarks: remarks
+          })
+        }
+      );
 
+      const data = await res.json();
 
-{/* STEP BAR */}
+      console.log("PURPOSE SAVE RESPONSE:", data);
 
-<View style={styles.stepRow}>
+      if (data?.success) {
 
-<View style={styles.stepDone}/>
-<View style={styles.stepActive}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
-<View style={styles.step}/>
+        router.push("/class-observation");
 
-</View>
+      } else {
 
+        alert(data?.message || "Failed to save purpose");
 
-{/* FORM CARD */}
+      }
 
-<View style={styles.card}>
+    } catch (e) {
 
+      console.log("Purpose save error", e);
+      alert("Something went wrong");
 
-{/* VISIT PURPOSE */}
+    } finally {
 
-<Text style={styles.label}>
-Visit Purpose
-</Text>
+      setLoading(false);
 
-<TouchableOpacity
-style={styles.dropdown}
-onPress={()=>setShowDropdown(!showDropdown)}
->
+    }
 
-<Text style={styles.dropdownText}>
-{purpose}
-</Text>
+  };
 
-<Ionicons name="chevron-down" size={18} color="#F97316"/>
+  return (
 
-</TouchableOpacity>
+    <View style={styles.container}>
 
+      <AppHeader title="Visit Form" />
 
-{showDropdown &&(
+      <SchoolBanner />
 
-<View style={styles.dropdownList}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
 
-{purposes.map((item,index)=>(
-<TouchableOpacity
-key={index}
-style={styles.option}
-onPress={()=>{
-setPurpose(item)
-setShowDropdown(false)
-}}
->
-<Text>{item}</Text>
-</TouchableOpacity>
-))}
+        <Text style={styles.stepText}>STEP 2 OF 6</Text>
 
-</View>
+        {/* STEP PROGRESS */}
 
-)}
+        <View style={styles.stepRow}>
+          <View style={styles.stepDone} />
+          <View style={styles.stepActive} />
+          <View style={styles.step} />
+          <View style={styles.step} />
+          <View style={styles.step} />
+          <View style={styles.step} />
+        </View>
 
+        {/* FORM CARD */}
 
+        <View style={styles.card}>
 
-{/* RESOURCE PERSON */}
+          {/* PURPOSE */}
 
-<Text style={styles.label}>
-Additional Resource Person
-</Text>
+          <Text style={styles.label}>Visit Purpose</Text>
 
-<View style={styles.dropdown}>
+          <TouchableOpacity
+            style={styles.dropdown}
+            onPress={() => setShowDropdown(!showDropdown)}
+          >
+            <Text>{purpose}</Text>
+            <Ionicons name="chevron-down" size={18} color="#F97316" />
+          </TouchableOpacity>
 
-<Text style={styles.placeholder}>
-Search and select person...
-</Text>
+          {showDropdown && (
 
-<Ionicons name="chevron-down" size={18} color="#F97316"/>
+            <View style={styles.dropdownList}>
 
-</View>
+              {purposes.map((item, index) => (
 
+                <TouchableOpacity
+                  key={index}
+                  style={styles.option}
+                  onPress={() => {
+                    setPurpose(item);
+                    setShowDropdown(false);
+                  }}
+                >
+                  <Text>{item}</Text>
+                </TouchableOpacity>
 
+              ))}
 
-{/* REMARKS */}
+            </View>
 
-<View style={styles.remarkHeader}>
+          )}
 
-<Text style={styles.label}>
-Remarks
-</Text>
+          {/* REMARKS */}
 
-<Text style={styles.mandatory}>
-MANDATORY
-</Text>
+          <Text style={styles.label}>Remarks</Text>
 
-</View>
+          <TextInput
+            multiline
+            value={remarks}
+            onChangeText={setRemarks}
+            style={styles.textArea}
+            placeholder="Enter remarks"
+          />
 
-<TextInput
-placeholder="Enter visit details..."
-placeholderTextColor="#9CA3AF"
-multiline
-style={styles.textArea}
-/>
+          {/* BUTTONS */}
 
-<Text style={styles.note}>
-Required for selected visit purpose
-</Text>
+          <View style={styles.btnRow}>
 
+            <TouchableOpacity style={styles.draftBtn}>
+              <Text style={styles.draftText}>Save Draft</Text>
+            </TouchableOpacity>
 
-{/* BUTTONS */}
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={savePurpose}
+              disabled={loading}
+            >
 
-<View style={styles.btnRow}>
+              {loading ? (
+                <ActivityIndicator color="#fff"/>
+              ) : (
+                <Text style={styles.nextText}>Next Step</Text>
+              )}
 
-<TouchableOpacity style={styles.draftBtn}>
-<Text style={styles.draftText}>
-Save Draft
-</Text>
-</TouchableOpacity>
+            </TouchableOpacity>
 
-<TouchableOpacity
-style={styles.nextBtn}
-onPress={()=>router.push("/class-observation")}
->
-<Text style={styles.nextText}>
-Next Step
-</Text>
-</TouchableOpacity>
+          </View>
 
-</View>
+        </View>
 
-</View>
+      </ScrollView>
 
-<Text style={styles.bottomNote}>
-Complete required fields to proceed
-</Text>
+    </View>
 
-</ScrollView>
-
-</View>
-
-)
+  );
 
 }
 
 const styles = StyleSheet.create({
 
-container:{
-flex:1,
-backgroundColor:"#F3F4F6"
-},
+  container: { flex: 1, backgroundColor: "#F3F4F6" },
 
-stepText:{
-textAlign:"center",
-marginTop:15,
-fontSize:12,
-color:"#6B7280"
-},
+  stepText: {
+    textAlign: "center",
+    marginTop: 15,
+    color: "#6B7280"
+  },
 
-stepRow:{
-flexDirection:"row",
-justifyContent:"center",
-marginVertical:10
-},
+  stepRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 10
+  },
 
-stepDone:{
-width:28,
-height:6,
-backgroundColor:"#F97316",
-borderRadius:10,
-marginHorizontal:4
-},
+  stepDone: {
+    width: 28,
+    height: 6,
+    backgroundColor: "#F97316",
+    borderRadius: 10,
+    marginHorizontal: 4
+  },
 
-stepActive:{
-width:28,
-height:6,
-backgroundColor:"#F97316",
-borderRadius:10,
-marginHorizontal:4
-},
+  stepActive: {
+    width: 28,
+    height: 6,
+    backgroundColor: "#F97316",
+    borderRadius: 10,
+    marginHorizontal: 4
+  },
 
-step:{
-width:28,
-height:6,
-backgroundColor:"#D1D5DB",
-borderRadius:10,
-marginHorizontal:4
-},
+  step: {
+    width: 28,
+    height: 6,
+    backgroundColor: "#D1D5DB",
+    borderRadius: 10,
+    marginHorizontal: 4
+  },
 
-card:{
-backgroundColor:"#fff",
-margin:20,
-padding:20,
-borderRadius:16
-},
+  card: {
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 20,
+    borderRadius: 16
+  },
 
-label:{
-fontSize:13,
-fontWeight:"700",
-marginBottom:6,
-color:"#374151"
-},
+  label: {
+    fontWeight: "700",
+    marginBottom: 6
+  },
 
-dropdown:{
-flexDirection:"row",
-justifyContent:"space-between",
-alignItems:"center",
-backgroundColor:"#F3F4F6",
-padding:16,
-borderRadius:12
-},
+  dropdown: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#F3F4F6",
+    padding: 16,
+    borderRadius: 12
+  },
 
-dropdownText:{
-color:"#111"
-},
+  dropdownList: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginTop: 5
+  },
 
-dropdownList:{
-backgroundColor:"#fff",
-borderRadius:10,
-marginTop:5,
-marginBottom:10,
-elevation:3
-},
+  option: {
+    padding: 14
+  },
 
-option:{
-padding:14,
-borderBottomWidth:0.5,
-borderColor:"#ddd"
-},
+  textArea: {
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    borderRadius: 12,
+    padding: 16,
+    height: 110,
+    marginTop: 8
+  },
 
-placeholder:{
-color:"#9CA3AF"
-},
+  btnRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 25
+  },
 
-remarkHeader:{
-flexDirection:"row",
-justifyContent:"space-between",
-alignItems:"center",
-marginTop:15
-},
+  draftBtn: {
+    borderWidth: 2,
+    borderColor: "#F97316",
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12
+  },
 
-mandatory:{
-color:"#EF4444",
-fontSize:11,
-fontWeight:"700"
-},
+  draftText: {
+    color: "#F97316",
+    fontWeight: "700"
+  },
 
-textArea:{
-borderWidth:1,
-borderColor:"#EF4444",
-borderRadius:12,
-padding:16,
-height:110,
-marginTop:8
-},
+  nextBtn: {
+    backgroundColor: "#F97316",
+    paddingVertical: 14,
+    paddingHorizontal: 35,
+    borderRadius: 12
+  },
 
-note:{
-marginTop:6,
-color:"#6B7280",
-fontSize:12
-},
-
-btnRow:{
-flexDirection:"row",
-justifyContent:"space-between",
-marginTop:25
-},
-
-draftBtn:{
-borderWidth:2,
-borderColor:"#F97316",
-paddingVertical:14,
-paddingHorizontal:28,
-borderRadius:12
-},
-
-draftText:{
-color:"#F97316",
-fontWeight:"700"
-},
-
-nextBtn:{
-backgroundColor:"#F97316",
-paddingVertical:14,
-paddingHorizontal:35,
-borderRadius:12
-},
-
-nextText:{
-color:"#fff",
-fontWeight:"700"
-},
-
-bottomNote:{
-textAlign:"center",
-marginTop:10,
-color:"#9CA3AF",
-fontSize:12
-}
+  nextText: {
+    color: "#fff",
+    fontWeight: "700"
+  }
 
 });
+

@@ -13,6 +13,9 @@ import {
   View,
 } from "react-native";
 
+const BASE_URL =
+  "https://rp-backend-60066119139.development.catalystserverless.in";
+
 export default function OtpScreen() {
 
   const router = useRouter();
@@ -23,7 +26,9 @@ export default function OtpScreen() {
 
   const verifyOtp = async () => {
 
-    if (!enteredOtp || enteredOtp.length !== 6) {
+    if (loading) return;
+
+    if (!enteredOtp || enteredOtp.trim().length !== 6) {
       Alert.alert("Error", "Please enter valid 6 digit OTP");
       return;
     }
@@ -32,10 +37,8 @@ export default function OtpScreen() {
 
       setLoading(true);
 
-      /* VERIFY OTP */
-
       const response = await fetch(
-        "https://rp-backend-60066119139.development.catalystserverless.in/server/auth_verify_otp/rp/auth/verify-otp",
+        `${BASE_URL}/server/auth_verify_otp/rp/auth/verify-otp`,
         {
           method: "POST",
           headers: {
@@ -43,7 +46,7 @@ export default function OtpScreen() {
           },
           body: JSON.stringify({
             identifier: phone,
-            otp: enteredOtp
+            otp: enteredOtp.trim()
           })
         }
       );
@@ -53,52 +56,36 @@ export default function OtpScreen() {
       console.log("OTP RESPONSE:", data);
 
       if (!data.success) {
-        Alert.alert("Error", "OTP verification failed");
+        Alert.alert("Error", data.message || "OTP verification failed");
         return;
       }
 
-      const token = data.access_token;
+      /* STORE RP ID */
 
-      console.log("TOKEN:", token);
+      const rpId = String(data.rowid);
 
-      await AsyncStorage.setItem("access_token", token);
+      await AsyncStorage.setItem("rp_id", rpId);
 
-      /* GET PROFILE */
+      console.log("RP ID STORED:", rpId);
 
-      const profileResponse = await fetch(
-        "https://rp-backend-60066119139.development.catalystserverless.in/server/rp_mobile/rp/profile",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        }
-      );
+      /* STORE USER INFO */
 
-      const profile = await profileResponse.json();
+      await AsyncStorage.multiSet([
+        ["rp_name", `${data.first_name ?? ""} ${data.last_name ?? ""}`],
+        ["rp_email", data.email ?? ""],
+        ["rp_phone", data.phone ?? ""]
+      ]);
 
-      console.log("PROFILE:", profile);
+      console.log("USER DATA SAVED");
 
-      if (profile?.data?.ROWID) {
+      /* NAVIGATE */
 
-        await AsyncStorage.setItem(
-          "rp_id",
-          profile.data.ROWID.toString()
-        );
-
-        router.replace("/dashboard");
-
-      } else {
-
-        Alert.alert("Login Error", "Profile fetch failed");
-
-      }
+      router.replace("/dashboard");
 
     } catch (error) {
 
       console.log("OTP ERROR:", error);
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert("Error", "Something went wrong while verifying OTP");
 
     } finally {
 
@@ -124,6 +111,7 @@ export default function OtpScreen() {
       </Text>
 
       <View style={styles.inputBox}>
+
         <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
 
         <TextInput
@@ -135,9 +123,14 @@ export default function OtpScreen() {
           value={enteredOtp}
           onChangeText={setEnteredOtp}
         />
+
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={verifyOtp}>
+      <TouchableOpacity
+        style={[styles.button, loading && { opacity: 0.6 }]}
+        onPress={verifyOtp}
+        disabled={loading}
+      >
 
         {loading ? (
           <ActivityIndicator color="#fff" />
