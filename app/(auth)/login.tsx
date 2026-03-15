@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FDEDDC",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 5,
+    
   },
 
   appTitle: {
@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
 
   image: {
     width: "100%",
-    height: 180,
-    borderRadius: 20,
+    height: 170,
+    borderRadius: 10,
     marginBottom: 15,
   },
 
@@ -267,6 +267,8 @@ const styles = StyleSheet.create({
   authorizedText: {
     marginLeft: 6,
     fontSize: 12,
+  
     color: "#9CA3AF",
+    
   },
 });
